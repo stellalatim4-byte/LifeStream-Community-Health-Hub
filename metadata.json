@@ -1,0 +1,7 @@
+{
+  "name": "LifeStream: Community Health Hub",
+  "description": "A patient-centered, low-data health platform designed for low-connectivity environments with integrated human follow-up and AI health literacy tools.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
