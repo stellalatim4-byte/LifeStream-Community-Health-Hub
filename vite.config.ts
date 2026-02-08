@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    return {base:"/ai-studio-app-1/",plugins:[react()],};
+    return {base:"/ai-studio-app-1-sync/",plugins:[react()],};
       server: {
         port: 3000,
         host: '0.0.0.0',
