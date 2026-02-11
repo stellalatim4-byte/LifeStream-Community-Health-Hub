@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import DashboardHeader from './components/DashboardHeader';
 import BloodStockChart from './components/BloodStockChart';
 import DonorManager from './components/DonorManager';
@@ -225,6 +226,7 @@ const App: React.FC = () => {
           animation: marquee 30s linear infinite;
         }
       `}} />
+      <SpeedInsights />
     </div>
   );
 };
