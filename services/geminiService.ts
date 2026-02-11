@@ -51,20 +51,35 @@ export const simplifyMedicalText = async (text: string) => {
 };
 
 /**
- * Generates a localized emergency alert message.
+ * Generates a localized emergency alert message including real-time stock data.
  */
-export const generateEmergencyDraft = async (type: string, details: string, config: AppConfig) => {
+export const generateEmergencyDraft = async (
+  type: string, 
+  details: string, 
+  config: AppConfig,
+  stockRequired: number,
+  stockAvailable: number
+) => {
   try {
+    const deficit = stockRequired - stockAvailable;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Draft a short, urgent emergency alert message for a community health group. 
-      Type: ${type}. Details: ${details}. Hospital: ${config.hospitalName}. Department: ${config.departmentName}.
+      contents: `Draft a short, urgent emergency alert message.
+      Type: ${type}. 
+      Details: ${details}. 
+      Current Need: ${stockRequired} units required.
+      Current Stock: ${stockAvailable} available.
+      Deficit: ${deficit} units missing.
+      Hospital: ${config.hospitalName}. 
+      Department: ${config.departmentName}.
+      
+      CRITICAL: You MUST include the specific numbers for units required and available in the message. 
       Keep it professional but urgent. Limit to 160 characters.`,
     });
     return response.text;
   } catch (error) {
     console.error("Draft error", error);
-    return `EMERGENCY ALERT: ${type}. ${details}`;
+    return `EMERGENCY: ${type}. ${stockRequired} units needed, only ${stockAvailable} left. ${details}`;
   }
 };
 

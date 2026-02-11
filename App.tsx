@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import BloodStockChart from './components/BloodStockChart';
 import DonorManager from './components/DonorManager';
@@ -11,16 +11,33 @@ import CommunityCTA from './components/CommunityCTA';
 import CopyrightSection from './components/CopyrightSection';
 import Acknowledgements from './components/Acknowledgements';
 import { AppConfig } from './types';
-import { DEFAULT_CONFIG } from './constants';
+import { DEFAULT_CONFIG, MOCK_SURGERY_DATA } from './constants';
 
 const App: React.FC = () => {
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [lastSync, setLastSync] = useState(new Date());
+  const [recentAlerts, setRecentAlerts] = useState<string[]>([]);
+
+  // Calculate "Real-time" stock from the mock data
+  const currentStockInfo = useMemo(() => {
+    const latest = MOCK_SURGERY_DATA[MOCK_SURGERY_DATA.length - 1];
+    return {
+      available: latest.bloodUnitsAvailable,
+      required: latest.bloodUnitsRequired,
+      percentage: Math.round((latest.bloodUnitsAvailable / latest.bloodUnitsRequired) * 100)
+    };
+  }, []);
 
   const toggleConfig = (key: keyof AppConfig) => {
     setConfig(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleBroadcast = (message: string) => {
+    // Add to local feed for immediate feedback
+    setRecentAlerts(prev => [message, ...prev].slice(0, 5));
+    setIsAlertModalOpen(false);
   };
 
   useEffect(() => {
@@ -113,10 +130,15 @@ const App: React.FC = () => {
                    <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest">Pulse Feed</span>
                  </div>
                  <div className="animate-marquee whitespace-nowrap flex gap-12 text-xs font-medium text-blue-100/70">
+                   {recentAlerts.map((alert, idx) => (
+                     <span key={`user-${idx}`} className="text-white font-bold bg-white/10 px-2 rounded">
+                       USER BROADCAST: {alert}
+                     </span>
+                   ))}
                    <span>Monitoring O+ Stock Levels in {config.region}...</span>
+                   <span>Available: {currentStockInfo.available} | Required: {currentStockInfo.required}...</span>
                    <span>Donor Follow-up automation active...</span>
                    <span>Patient Continuity score: 94%...</span>
-                   <span>Verifying Regional Health Authority Sync...</span>
                  </div>
               </div>
             </div>
@@ -126,11 +148,16 @@ const App: React.FC = () => {
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex-1 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-16 h-16 bg-red-50 rounded-bl-3xl -mr-4 -mt-4 opacity-50"></div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Blood Stock Status</p>
-              <h3 className="text-2xl font-black text-slate-900">12 Units Left</h3>
+              <h3 className="text-2xl font-black text-slate-900">{currentStockInfo.available} Units Left</h3>
               <div className="mt-4 h-3 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-red-500 w-1/2 rounded-full animate-pulse"></div>
+                <div 
+                  className="h-full bg-red-500 rounded-full animate-pulse transition-all duration-1000" 
+                  style={{ width: `${currentStockInfo.percentage}%` }}
+                ></div>
               </div>
-              <p className="text-xs text-red-500 mt-2 font-bold uppercase tracking-tighter">Below Recommended Buffer</p>
+              <p className="text-xs text-red-500 mt-2 font-bold uppercase tracking-tighter">
+                {currentStockInfo.percentage}% Capacity (Need: {currentStockInfo.required})
+              </p>
             </div>
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex-1 relative overflow-hidden">
                <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-3xl -mr-4 -mt-4 opacity-50"></div>
@@ -165,7 +192,14 @@ const App: React.FC = () => {
       <CommunityCTA />
       <CopyrightSection />
 
-      <EmergencyDraftModal isOpen={isAlertModalOpen} onClose={() => setIsAlertModalOpen(false)} onSend={() => setIsAlertModalOpen(false)} config={config} />
+      <EmergencyDraftModal 
+        isOpen={isAlertModalOpen} 
+        onClose={() => setIsAlertModalOpen(false)} 
+        onSend={handleBroadcast} 
+        config={config} 
+        currentAvailable={currentStockInfo.available}
+        currentRequired={currentStockInfo.required}
+      />
       <ConfigModal isOpen={isConfigModalOpen} onClose={() => setIsConfigModalOpen(false)} config={config} onSave={setConfig} />
 
       <footer className="bg-slate-50 border-t border-slate-100 py-12">

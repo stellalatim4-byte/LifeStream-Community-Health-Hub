@@ -8,28 +8,62 @@ interface Props {
   onClose: () => void;
   onSend: (message: string) => void;
   config: AppConfig;
+  currentAvailable: number;
+  currentRequired: number;
 }
 
-const EmergencyDraftModal: React.FC<Props> = ({ isOpen, onClose, onSend, config }) => {
+const EmergencyDraftModal: React.FC<Props> = ({ 
+  isOpen, 
+  onClose, 
+  onSend, 
+  config,
+  currentAvailable,
+  currentRequired 
+}) => {
   const [details, setDetails] = useState('');
   const [type, setType] = useState('Surgical Emergency');
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
-    const result = await generateEmergencyDraft(type, details, config);
+    const result = await generateEmergencyDraft(
+      type, 
+      details, 
+      config, 
+      currentRequired, 
+      currentAvailable
+    );
     setDraft(result || '');
     setLoading(false);
   };
 
+  const handleBroadcast = () => {
+    if (!draft) return;
+    setIsBroadcasting(true);
+    
+    // Simulate real broadcasting delay
+    setTimeout(() => {
+      onSend(draft);
+      setIsBroadcasting(false);
+      setDraft('');
+      setDetails('');
+    }, 1200);
+  };
+
   if (!isOpen) return null;
+
+  const deficit = currentRequired - currentAvailable;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-slate-800">Launch Emergency Alert</h2>
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Launch Emergency Alert</h2>
+            <p className="text-[10px] text-red-500 font-black uppercase tracking-widest mt-1">Real-Time Data Active</p>
+          </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -38,12 +72,30 @@ const EmergencyDraftModal: React.FC<Props> = ({ isOpen, onClose, onSend, config 
         </div>
         
         <div className="p-6 space-y-4">
+          {/* Real-time metrics section */}
+          <div className="grid grid-cols-2 gap-4 bg-red-50/50 p-4 rounded-xl border border-red-100">
+            <div>
+              <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Units Required</p>
+              <p className="text-xl font-black text-slate-900">{currentRequired}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Units Available</p>
+              <p className="text-xl font-black text-slate-900">{currentAvailable}</p>
+            </div>
+            <div className="col-span-2 pt-2 border-t border-red-100">
+               <p className="text-[9px] font-black text-red-600 uppercase tracking-widest">
+                 System Deficit: <span className="text-base">{deficit} Units</span>
+               </p>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Alert Type</label>
             <select 
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blood-red outline-none"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blood-red outline-none disabled:bg-slate-50"
               value={type}
               onChange={(e) => setType(e.target.value)}
+              disabled={isBroadcasting}
             >
               <option>Surgical Emergency</option>
               <option>Mass Casualty Event</option>
@@ -55,17 +107,18 @@ const EmergencyDraftModal: React.FC<Props> = ({ isOpen, onClose, onSend, config 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Contextual Details</label>
             <textarea 
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg h-24 focus:ring-2 focus:ring-blood-red outline-none resize-none"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg h-24 focus:ring-2 focus:ring-blood-red outline-none resize-none disabled:bg-slate-50"
               placeholder={`e.g. Multiple trauma cases in ${config.departmentName}, urgent need for O+ units...`}
               value={details}
               onChange={(e) => setDetails(e.target.value)}
+              disabled={isBroadcasting}
             />
           </div>
 
           <button 
             onClick={handleGenerate}
-            disabled={loading}
-            className="w-full bg-slate-100 text-slate-700 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
+            disabled={loading || isBroadcasting}
+            className="w-full bg-slate-100 text-slate-700 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -73,14 +126,14 @@ const EmergencyDraftModal: React.FC<Props> = ({ isOpen, onClose, onSend, config 
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Analyzing context...
+                Analyzing context & stock...
               </span>
             ) : (
               <>
                 <svg className="w-5 h-5 text-blood-red" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                 </svg>
-                Draft AI Message
+                Draft Stock-Aware Alert
               </>
             )}
           </button>
@@ -98,16 +151,27 @@ const EmergencyDraftModal: React.FC<Props> = ({ isOpen, onClose, onSend, config 
         <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
           <button 
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-slate-200 text-slate-600 rounded-lg font-semibold hover:bg-white transition-colors"
+            disabled={isBroadcasting}
+            className="flex-1 px-4 py-2 border border-slate-200 text-slate-600 rounded-lg font-semibold hover:bg-white transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button 
-            onClick={() => onSend(draft)}
-            disabled={!draft}
-            className="flex-1 px-4 py-2 bg-blood-red text-white rounded-lg font-semibold hover:bg-red-700 transition-colors shadow-lg shadow-red-200 disabled:opacity-50"
+            onClick={handleBroadcast}
+            disabled={!draft || isBroadcasting}
+            className="flex-1 px-4 py-2 bg-blood-red text-white rounded-lg font-semibold hover:bg-red-700 transition-all shadow-lg shadow-red-200 disabled:bg-slate-400 disabled:shadow-none relative flex items-center justify-center overflow-hidden"
           >
-            Broadcast
+            {isBroadcasting ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Broadcasting...
+              </span>
+            ) : (
+              "Broadcast"
+            )}
           </button>
         </div>
       </div>
