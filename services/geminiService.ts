@@ -75,7 +75,8 @@ export const findNearbyResources = async (query: string, lat: number, lng: numbe
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Provide a list of the most relevant ${query} near these coordinates. For each, give a very brief 1-sentence description.`,
+      // Explicitly providing lat/lng in the prompt text ensures the model acknowledges the data is present
+      contents: `I am at latitude ${lat.toFixed(5)} and longitude ${lng.toFixed(5)}. Using Google Maps tools, provide a list of the most relevant ${query} near me. For each, give a very brief 1-sentence description.`,
       config: {
         tools: [{ googleMaps: {} }],
         toolConfig: {
