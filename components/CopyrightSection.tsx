@@ -12,7 +12,7 @@ const CopyrightSection: React.FC = () => {
         </div>
         
         <h4 className="text-slate-800 font-bold text-base mb-3 tracking-tight">
-          © 2026 Intercultural Development Agency (IDA). All rights reserved.
+          © 2025 Intercultural Development Agency (IDA). All rights reserved.
         </h4>
         
         <p className="text-slate-500 text-sm leading-relaxed italic max-w-2xl mx-auto">

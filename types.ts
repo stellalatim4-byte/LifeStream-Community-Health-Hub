@@ -8,7 +8,9 @@ export interface Donor {
   email: string;
   bloodType: BloodType;
   lastDonationDate: string;
+  registryYear: number;
   location: string;
+  country: string;
   status: 'Available' | 'On Hold' | 'Recent Donor';
 }
 

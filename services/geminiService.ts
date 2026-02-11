@@ -52,7 +52,6 @@ export const simplifyMedicalText = async (text: string) => {
 
 /**
  * Generates a localized emergency alert message.
- * Fixes: Added missing export for EmergencyDraftModal.tsx
  */
 export const generateEmergencyDraft = async (type: string, details: string, config: AppConfig) => {
   try {
@@ -76,7 +75,7 @@ export const findNearbyResources = async (query: string, lat: number, lng: numbe
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Find ${query} near these coordinates.`,
+      contents: `Provide a list of the most relevant ${query} near these coordinates. For each, give a very brief 1-sentence description.`,
       config: {
         tools: [{ googleMaps: {} }],
         toolConfig: {
@@ -88,7 +87,7 @@ export const findNearbyResources = async (query: string, lat: number, lng: numbe
     });
     return {
       text: response.text,
-      links: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+      chunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
     };
   } catch (error) {
     console.error("Maps error", error);
