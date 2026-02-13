@@ -1,29 +1,30 @@
 
 export type BloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
 
-export interface Donor {
+export interface ResilienceMetric {
   id: string;
-  name: string;
-  phone: string;
-  email: string;
-  bloodType: BloodType;
-  lastDonationDate: string;
-  registryYear: number;
-  location: string;
-  country: string;
-  status: 'Available' | 'On Hold' | 'Recent Donor';
+  category: 'Psychological' | 'Productivity' | 'Food' | 'Labor';
+  value: number;
+  benchmark: number;
+  label: string;
+  trend: 'improving' | 'declining' | 'stable';
 }
 
-export interface HealthReferral {
+export interface RevenueStream {
   id: string;
-  patientName: string;
-  conditionName: string;
-  discreetName: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  lastFollowUp: string;
-  nextStep: string;
-  assignedWorker: string;
-  workerPhone: string;
+  assetName: string;
+  totalFees: number;
+  targetFees: number;
+  reinvestmentRate: number;
+}
+
+export interface Certification {
+  id: string;
+  studentName: string;
+  institution: string;
+  course: string;
+  dateCompleted: string;
+  isVerified: boolean;
 }
 
 export interface AppConfig {
@@ -38,4 +39,26 @@ export interface AppConfig {
   isSimpleLanguage: boolean;
   isHighContrast: boolean;
   offlineMode: boolean;
+}
+
+// Added Donor type to fix error in DonorManager.tsx
+export interface Donor {
+  id: string;
+  name: string;
+  bloodType: BloodType;
+  country: string;
+  location: string;
+  registryYear: number;
+  lastDonationDate: string;
+  status: 'Available' | 'Recent Donor' | 'Inactive';
+}
+
+// Added HealthReferral type to fix error in HealthJourney.tsx
+export interface HealthReferral {
+  id: string;
+  conditionName: string;
+  discreetName: string;
+  assignedWorker: string;
+  nextStep: string;
+  workerPhone: string;
 }

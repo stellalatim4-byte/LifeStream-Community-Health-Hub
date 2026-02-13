@@ -4,7 +4,6 @@ import { AppConfig } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Manual implementation of base64 decoding as per SDK guidelines
 function decode(base64: string) {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -15,7 +14,6 @@ function decode(base64: string) {
   return bytes;
 }
 
-// Manual implementation of raw PCM audio decoding as per SDK guidelines
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
@@ -35,9 +33,6 @@ async function decodeAudioData(
   return buffer;
 }
 
-/**
- * Simplifies complex medical jargon into plain language.
- */
 export const simplifyMedicalText = async (text: string) => {
   try {
     const response = await ai.models.generateContent({
@@ -50,9 +45,7 @@ export const simplifyMedicalText = async (text: string) => {
   }
 };
 
-/**
- * Generates a localized emergency alert message including real-time stock data.
- */
+// Fix: Moved 'deficit' calculation outside of the try block so it is accessible in the catch block
 export const generateEmergencyDraft = async (
   type: string, 
   details: string, 
@@ -60,38 +53,33 @@ export const generateEmergencyDraft = async (
   stockRequired: number,
   stockAvailable: number
 ) => {
+  const deficit = stockRequired - stockAvailable;
   try {
-    const deficit = stockRequired - stockAvailable;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Draft a short, urgent emergency alert message.
+      contents: `Draft a high-priority, IHR 2005 compliant emergency alert.
+      Context: ${config.hospitalName} ${config.departmentName}. 
       Type: ${type}. 
-      Details: ${details}. 
-      Current Need: ${stockRequired} units required.
-      Current Stock: ${stockAvailable} available.
-      Deficit: ${deficit} units missing.
-      Hospital: ${config.hospitalName}. 
-      Department: ${config.departmentName}.
+      Surgical Need: Orthopedic cases (Road accidents, childhood deformity corrections, joint replacements, bone cancers).
+      Stats: ${stockRequired} units needed, ${stockAvailable} available (${deficit} deficit).
       
-      CRITICAL: You MUST include the specific numbers for units required and available in the message. 
-      Keep it professional but urgent. Limit to 160 characters.`,
+      RULES: 
+      1. Reference IHR 2005 Public Health Emergency standards.
+      2. Keep it under 160 chars for SMS compatibility.
+      3. Focus on "Life-Saving Action Required".
+      4. Professional yet urgent tone.`,
     });
     return response.text;
   } catch (error) {
-    console.error("Draft error", error);
-    return `EMERGENCY: ${type}. ${stockRequired} units needed, only ${stockAvailable} left. ${details}`;
+    return `URGENT IHR ALERT: ${type}. ${deficit} blood units needed at ${config.hospitalName} Orthopedics. ${details}`;
   }
 };
 
-/**
- * Uses Google Maps to find nearby health resources based on user location.
- */
 export const findNearbyResources = async (query: string, lat: number, lng: number) => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      // Explicitly providing lat/lng in the prompt text ensures the model acknowledges the data is present
-      contents: `I am at latitude ${lat.toFixed(5)} and longitude ${lng.toFixed(5)}. Using Google Maps tools, provide a list of the most relevant ${query} near me. For each, give a very brief 1-sentence description.`,
+      contents: `I am at latitude ${lat.toFixed(5)} and longitude ${lng.toFixed(5)}. Find ${query}. Mention how they support orthopedic trauma response if possible.`,
       config: {
         tools: [{ googleMaps: {} }],
         toolConfig: {
@@ -106,19 +94,15 @@ export const findNearbyResources = async (query: string, lat: number, lng: numbe
       chunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
     };
   } catch (error) {
-    console.error("Maps error", error);
     return null;
   }
 };
 
-/**
- * TTS for reading health instructions aloud using Gemini TTS.
- */
 export const speakInstruction = async (text: string) => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Say clearly and slowly: ${text}` }] }],
+      contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
       config: {
         responseModalities: [Modality.AUDIO],
         speechConfig: {
@@ -130,12 +114,7 @@ export const speakInstruction = async (text: string) => {
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (base64Audio) {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      const audioBuffer = await decodeAudioData(
-        decode(base64Audio),
-        audioCtx,
-        24000,
-        1
-      );
+      const audioBuffer = await decodeAudioData(decode(base64Audio), audioCtx, 24000, 1);
       const source = audioCtx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioCtx.destination);
